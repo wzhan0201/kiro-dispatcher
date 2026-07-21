@@ -1,0 +1,18 @@
+# Runtime state (per-captain, not shared)
+state/active/
+state/done/
+
+# Personal data
+data/captain.md
+data/learnings.md
+
+# Local config overrides
+config/crew-backend
+config/autonomy
+config/delivery-mode
+
+# Projects (cloned repos)
+projects/
+
+# OS
+.DS_Store
