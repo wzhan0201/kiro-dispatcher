@@ -44,7 +44,7 @@ else
   printf 'kiro-cli agent validation: SKIP (not installed)\n'
 fi
 
-if grep -RInE --exclude-dir=.git --exclude='*.example' --exclude='lint.sh' \
+if grep -RInE --exclude-dir=.git --exclude-dir=firstmate-parity --exclude='*.example' --exclude='lint.sh' \
   'fm-(spawn|watch|status|brief|teardown)|bin/dispatcher\.sh|agents/(developer|reviewer|scout)\.md|--profile (developer|reviewer|scout)|q chat|kiro chat --prompt' \
   "$ROOT"; then
   printf 'Found obsolete fixed-role or invalid command references.\n' >&2

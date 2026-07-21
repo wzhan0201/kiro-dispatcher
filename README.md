@@ -186,10 +186,23 @@ Environment variables override location-specific behavior:
 
 ```bash
 tests/lint.sh
+python3 tests/handover.py
 tests/smoke.sh
 ```
 
 The smoke test uses a local mock harness; it does not consume Kiro quota. It exercises brief creation, worktree isolation, tmux launch, status/report creation, JSON output, commit preservation, and teardown.
+
+## Amazon Q parity implementation handover
+
+The repository includes a tracked, opt-in implementation package for porting Kiro Dispatcher to functional parity with pinned Firstmate commit `f9a89c3962a5ad0db3ef79756a477053998c2529`:
+
+- Start with [`Q_IMPLEMENTATION_HANDOVER.md`](Q_IMPLEMENTATION_HANDOVER.md).
+- Track scope in [`docs/firstmate-parity/MATRIX.md`](docs/firstmate-parity/MATRIX.md).
+- Follow [`docs/firstmate-parity/ROADMAP.md`](docs/firstmate-parity/ROADMAP.md).
+- Apply the evidence rules in [`docs/firstmate-parity/VERIFICATION.md`](docs/firstmate-parity/VERIFICATION.md).
+- Preserve [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+These files are implementation instructions for an explicitly directed coding agent. They are intentionally not included in the runtime dispatcher agent’s resources or Kiro steering, so ordinary dispatcher sessions are not redirected into self-modification work.
 
 ## Safety boundaries
 
