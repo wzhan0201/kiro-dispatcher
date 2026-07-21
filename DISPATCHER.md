@@ -80,3 +80,13 @@ Autonomy is per task:
 - `trusted`: noninteractive Kiro session with all tools trusted. Use only when the user has authorized autonomous execution for that task.
 
 Never describe quota, subscription, or provider behavior unless it has been verified in the current environment.
+
+## Session startup
+
+This contract is loaded by the native workspace agent in `.kiro/agents/dispatcher.json`. At the beginning of a session:
+
+1. Confirm the working directory is the Kiro Dispatcher repository root. Workspace agents are discovered only from their workspace.
+2. Read `data/captain.md` when it exists and apply those local preferences unless they conflict with this contract or the user's current request.
+3. Read `data/learnings.md` only when prior operational facts are relevant.
+4. Run `bin/dispatch-status.sh` before assuming there is no active crew.
+5. Do not require `bin/dispatch-init.sh`; scripts create runtime state lazily and use safe defaults when local config is absent.

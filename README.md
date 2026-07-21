@@ -39,25 +39,33 @@ The similarly named `kiro` executable may be the Kiro IDE launcher and is not us
 ```bash
 git clone https://github.com/wzhan0201/kiro-dispatcher.git ~/.kiro-dispatcher
 cd ~/.kiro-dispatcher
-bin/dispatch-init.sh
 ```
 
-The scripts also work from any other clone location. They derive the home directory from the repository; `DISPATCHER_HOME` is only needed when code and state are intentionally separated.
+There is no required install or startup script. Kiro CLI discovers the committed workspace agent in `.kiro/agents/` when invoked from the repository. The runtime scripts derive the home directory from the clone location; `DISPATCHER_HOME` is only needed when code and state are intentionally separated.
+
+`bin/dispatch-init.sh` is optional. Run it only if you want template files for local preferences and explicit local config; the runtime creates state directories and uses safe defaults without it.
 
 ## Start the dispatcher
 
-```bash
-cd ~/.kiro-dispatcher
-bin/dispatcher.sh
-```
-
-An initial request can be supplied directly:
+From the repository root, launch the native workspace agent:
 
 ```bash
-bin/dispatcher.sh "Audit ~/src/example and dispatch independent fixes in parallel"
+kiro-cli chat --agent dispatcher
 ```
 
-`dispatcher.sh` loads `DISPATCHER.md` plus local preferences from `data/captain.md`. By default, Kiro asks for normal tool approvals. `dispatcher.sh --trusted` trusts all dispatcher tools and should be used only when that broader authority is intentional.
+Then enter requests normally, for example: `Audit ~/src/example and dispatch independent fixes in parallel.`
+
+This is the Kiro equivalent of launching a supported harness inside the Firstmate repository: Kiro discovers `.kiro/agents/dispatcher.json`, loads `DISPATCHER.md` as a repository-relative resource, and starts an ordinary interactive chat. No prompt injection wrapper or `.sh` launcher is involved.
+
+The explicit `--agent dispatcher` remains necessary because Kiro discovers workspace agents but does not automatically select one over its configured default. Avoid globally setting this workspace-only agent as Kiro's default, because it is unavailable outside this repository.
+
+For a fully autonomous dispatcher session, Kiro's native trust flag can be added explicitly:
+
+```bash
+kiro-cli chat --agent dispatcher --trust-all-tools
+```
+
+This allows the dispatcher itself to run all available tools without approval. It does not change crewmate autonomy, which remains controlled separately per task; use it only when that authority is intentional.
 
 ## Manual workflow
 
@@ -133,10 +141,11 @@ The local default is read from `config/autonomy`; absent means `supervised`. `tr
 
 ```text
 DISPATCHER.md              dispatcher job description
+.kiro/agents/dispatcher.json  native workspace-agent definition
 crew/CREWMATE.md           generic contract loaded for every task
 profiles/                  optional specialist overlays
 harnesses/                 tested CLI launch adapters
-bin/dispatcher.sh          start the liaison session
+bin/dispatch-init.sh       optional local preference/config initialization
 bin/dispatch-brief.sh      create a standalone brief
 bin/dispatch-spawn.sh      create worktree + tmux crewmate
 bin/dispatch-run-crew.sh   internal task runner
