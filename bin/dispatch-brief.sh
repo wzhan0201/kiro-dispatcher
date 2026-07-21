@@ -41,9 +41,9 @@ BRIEF_FILE="$STATE_ACTIVE/$TASK_ID.brief.md"
 
 {
   printf '# Task Brief: %s\n\n' "$TITLE"
-  printf -- '- Task ID: `%s`\n' "$TASK_ID"
-  printf -- '- Kind: `%s`\n' "$KIND"
-  printf -- '- Created: `%s`\n\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf -- "- Task ID: \`%s\`\n" "$TASK_ID"
+  printf -- "- Kind: \`%s\`\n" "$KIND"
+  printf -- "- Created: \`%s\`\n\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   printf '## Objective and scope\n\n'
   if [[ -n "$FROM_FILE" ]]; then
     cat "$FROM_FILE"

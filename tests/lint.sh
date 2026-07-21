@@ -6,7 +6,7 @@ FAILED=0
 
 while IFS= read -r -d '' FILE; do
   if bash -n "$FILE"; then
-    printf 'bash -n: OK %s\n' "${FILE#$ROOT/}"
+    printf 'bash -n: OK %s\n' "${FILE#"$ROOT"/}"
   else
     FAILED=1
   fi
@@ -14,7 +14,7 @@ done < <(find "$ROOT/bin" "$ROOT/harnesses" "$ROOT/tests" -type f -name '*.sh' -
 
 if command -v shellcheck >/dev/null 2>&1; then
   while IFS= read -r -d '' FILE; do
-    shellcheck -x "$FILE" || FAILED=1
+    shellcheck -x -P "$ROOT/bin" "$FILE" || FAILED=1
   done < <(find "$ROOT/bin" "$ROOT/harnesses" "$ROOT/tests" -type f -name '*.sh' -print0)
 else
   printf 'shellcheck: SKIP (not installed)\n'
