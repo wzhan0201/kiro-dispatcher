@@ -1,18 +1,14 @@
-# Runtime state (per-captain, not shared)
-state/active/
-state/done/
+# Runtime and personal state
+state/*
+data/*
+!data/README.md
 
-# Personal data
-data/captain.md
-data/learnings.md
+# Local configuration
+config/*
+!config/*.example
 
-# Local config overrides
-config/crew-backend
-config/autonomy
-config/delivery-mode
-
-# Projects (cloned repos)
+# Local project registrations or clones
 projects/
 
-# OS
+# macOS
 .DS_Store

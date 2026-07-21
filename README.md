@@ -1,165 +1,198 @@
 # Kiro Dispatcher
 
-Talk to one agent. Ship with a crew.
+Kiro Dispatcher turns one Kiro CLI session into a liaison for a visible parallel crew. Each task runs as a separate Kiro CLI process in tmux and receives an isolated git worktree. The default crew is generic; optional profiles add reusable specialist expertise without imposing fixed developer/reviewer/scout roles.
 
-Kiro Dispatcher is an agent orchestration system for [Kiro CLI](https://kiro.dev). It spawns parallel autonomous agents in tmux windows, each working in an isolated git worktree, so you can run multiple tasks concurrently without conflicts.
+## Model
 
-## How It Works
-
-```
-You (captain)
-  └─→ Kiro CLI (dispatcher) ← you talk here
-        ├─→ tmux window 1: crewmate (developer)
-        ├─→ tmux window 2: crewmate (reviewer)
-        └─→ tmux window 3: crewmate (scout)
+```text
+user
+  └── dispatcher (one interactive Kiro CLI session)
+        ├── generic crewmate → task A worktree + tmux window
+        ├── generic crewmate → task B worktree + tmux window
+        └── generic crewmate + optional specialist profile → task C
 ```
 
-1. You give the dispatcher a task (or multiple).
-2. It breaks work into subtasks and writes briefs.
-3. It spawns crewmates — each in its own tmux window and git worktree.
-4. Crewmates work autonomously and signal completion via status files.
-5. Dispatcher reads results, synthesizes, and reports back to you.
+A task is either:
+- **ship**: produce and validate a focused change on an isolated branch;
+- **scout**: investigate, plan, reproduce, review, or audit and return a report.
 
-## Features
+Specialization belongs primarily in the standalone task brief. A profile is an optional durable overlay for recurring domain constraints, such as the bundled `aws-map-specialist` profile.
 
-- **One liaison** — talk only to the dispatcher; it manages the crew.
-- **Parallel execution** — crewmates run simultaneously in tmux windows you can inspect.
-- **Git worktree isolation** — each task gets a clean branch in a separate worktree; no conflicts.
-- **Mixed backends** — use Amazon Q (unlimited) for routine work, Kiro CLI for complex decisions.
-- **Two task shapes** — "ship" (deliver code) and "scout" (investigate/report).
-- **Restart-proof** — all state lives on disk as plain markdown files.
-- **Visible crew** — `tmux attach -t dispatcher` to watch any crewmate live.
+## What is verified
 
-## Quick Start
+The bundled harness adapter targets the terminal Kiro CLI executable `kiro-cli`, using syntax exposed by `kiro-cli chat --help`:
+- supervised: `kiro-cli chat <prompt>`;
+- trusted: `kiro-cli chat --no-interactive --trust-all-tools <prompt>`.
 
-### Prerequisites
+The similarly named `kiro` executable may be the Kiro IDE launcher and is not used. No Amazon Q adapter is bundled because this project does not assume that a `q` executable, authentication flow, or noninteractive interface exists. Add another provider only through a locally tested adapter as described in `harnesses/README.md`.
 
-- [Kiro CLI](https://kiro.dev) installed and authenticated
-- [Amazon Q CLI](https://aws.amazon.com/q/developer/) installed (optional, for unlimited crewmates)
-- [tmux](https://github.com/tmux/tmux) installed
-- git
+## Requirements
 
-### Setup
+- macOS or Linux
+- Bash 3.2+
+- Git
+- tmux
+- Kiro CLI available as `kiro-cli` and authenticated
+
+## Install
 
 ```bash
 git clone https://github.com/wzhan0201/kiro-dispatcher.git ~/.kiro-dispatcher
+cd ~/.kiro-dispatcher
+bin/dispatch-init.sh
 ```
 
-### Usage
+The scripts also work from any other clone location. They derive the home directory from the repository; `DISPATCHER_HOME` is only needed when code and state are intentionally separated.
 
-Start a Kiro CLI session and load the dispatcher prompt:
+## Start the dispatcher
 
 ```bash
 cd ~/.kiro-dispatcher
-kiro chat
+bin/dispatcher.sh
 ```
 
-Then tell the dispatcher what you need:
-
-```
-> I need to add pagination to the /users API and fix the login bug. Run both in parallel.
-```
-
-The dispatcher will:
-1. Create briefs for each task
-2. Spawn crewmates in tmux windows
-3. Monitor progress
-4. Report results when done
-
-### Manual Script Usage
+An initial request can be supplied directly:
 
 ```bash
-# Create a task brief
-./bin/fm-brief.sh --task fix-login --title "Fix login redirect bug" --body "The login page redirects to 404 after OAuth callback..."
-
-# Spawn a crewmate
-./bin/fm-spawn.sh --task fix-login --profile developer --project ~/myapp
-
-# Check fleet status
-./bin/fm-status.sh
-
-# Watch for completions
-./bin/fm-watch.sh
-
-# Clean up when done
-./bin/fm-teardown.sh fix-login
+bin/dispatcher.sh "Audit ~/src/example and dispatch independent fixes in parallel"
 ```
 
-## Directory Structure
+`dispatcher.sh` loads `DISPATCHER.md` plus local preferences from `data/captain.md`. By default, Kiro asks for normal tool approvals. `dispatcher.sh --trusted` trusts all dispatcher tools and should be used only when that broader authority is intentional.
 
+## Manual workflow
+
+Create a complete brief, then spawn a generic crewmate:
+
+```bash
+bin/dispatch-brief.sh \
+  --task fix-login \
+  --kind ship \
+  --title "Fix OAuth callback redirect" \
+  --body "Correct the callback redirect, add a regression test, and run the targeted auth test suite."
+
+bin/dispatch-spawn.sh \
+  --task fix-login \
+  --kind ship \
+  --project "$HOME/src/my-app"
 ```
-~/.kiro-dispatcher/
-├── agents/                 # Agent profiles
-│   ├── dispatcher.md       # Main orchestrator instructions
-│   ├── developer.md        # Developer crewmate profile
-│   ├── reviewer.md         # Code reviewer profile
-│   └── scout.md            # Investigation/audit profile
-├── bin/                    # Helper scripts
-│   ├── fm-spawn.sh         # Spawn a crewmate (tmux + worktree)
-│   ├── fm-watch.sh         # Monitor fleet for completions
-│   ├── fm-teardown.sh      # Clean up finished tasks
-│   ├── fm-status.sh        # Show fleet status
-│   └── fm-brief.sh         # Create task briefs
-├── config/                 # Operating configuration
-│   ├── crew-backend        # Default agent backend (q or kiro)
-│   ├── delivery-mode       # How ship tasks land (direct-pr, local-only)
-│   └── autonomy            # Permission level (conservative, yolo)
-├── data/                   # Persistent fleet records
-│   ├── captain.md          # Your preferences
-│   ├── backlog.md          # Task queue
-│   └── learnings.md        # Accumulated knowledge
-├── state/                  # Runtime state
-│   ├── active/             # Current task state files
-│   └── done/               # Archived completed tasks
-└── projects/               # Project registrations
+
+Use an optional specialist profile only when needed:
+
+```bash
+bin/dispatch-brief.sh \
+  --task map-review \
+  --kind scout \
+  --title "Review selected MAP artifacts" \
+  --file /absolute/path/to/standalone-scope.md
+
+bin/dispatch-spawn.sh \
+  --task map-review \
+  --kind scout \
+  --profile aws-map-specialist \
+  --project "$HOME/src/customer-assessment"
 ```
+
+Monitor and inspect:
+
+```bash
+bin/dispatch-status.sh
+bin/dispatch-status.sh --json
+bin/dispatch-watch.sh --once
+tmux attach -t kiro-dispatcher
+```
+
+After preserving and reviewing the result:
+
+```bash
+bin/dispatch-teardown.sh fix-login
+```
+
+Teardown refuses dirty worktrees. `--force` is an explicit discard operation and should be used only after the user authorizes losing uncommitted task work. Committed task branches are preserved.
+
+## Generic crew plus optional profiles
+
+`crew/CREWMATE.md` is always loaded. It defines safety, isolation, evidence, and final-report requirements but does not assign a profession.
+
+Profiles in `profiles/<name>.md` are layered after the generic contract and before the task brief. Add profiles only for reusable expertise or policy; do not recreate a fixed roster of job titles. Spawn without `--profile` for normal work.
+
+## Autonomy
+
+Crew autonomy can be selected per task:
+
+```bash
+# Default: visible interactive session; approvals may wait in tmux
+bin/dispatch-spawn.sh ... --autonomy supervised
+
+# Fully noninteractive and trusts all Kiro tools
+bin/dispatch-spawn.sh ... --autonomy trusted
+```
+
+The local default is read from `config/autonomy`; absent means `supervised`. `trusted` can execute project commands without confirmation, so use it only for appropriately scoped worktrees and reviewed briefs.
+
+## Layout
+
+```text
+DISPATCHER.md              dispatcher job description
+crew/CREWMATE.md           generic contract loaded for every task
+profiles/                  optional specialist overlays
+harnesses/                 tested CLI launch adapters
+bin/dispatcher.sh          start the liaison session
+bin/dispatch-brief.sh      create a standalone brief
+bin/dispatch-spawn.sh      create worktree + tmux crewmate
+bin/dispatch-run-crew.sh   internal task runner
+bin/dispatch-status.sh     list active tasks
+bin/dispatch-watch.sh      wait for state changes without model turns
+bin/dispatch-teardown.sh   remove worktree and archive task state
+bin/lib.sh                 shared strict-mode path/config/metadata helpers
+config/                    local harness/autonomy settings (gitignored)
+data/                      local preferences/backlog/learnings (gitignored)
+state/active/              live briefs, metadata, status, reports
+state/done/                archived task state after teardown
+```
+
+## State and isolation
+
+For each task, the dispatcher records:
+- `<id>.brief.md`: authoritative instructions;
+- `<id>.meta`: project, worktree, branch, kind, profile, harness, autonomy, and tmux endpoint;
+- `<id>.status`: current state;
+- `<id>.report.md`: captured harness output/final report.
+
+Worktrees are created below `${DISPATCHER_WORKTREE_ROOT:-${TMPDIR:-/tmp}/kiro-dispatcher-worktrees}`. A project-path hash prevents same-named repositories from colliding.
 
 ## Configuration
 
-### Crew Backend (`config/crew-backend`)
+Run `bin/dispatch-init.sh` to create local defaults. Tracked examples are in `config/*.example`.
 
-Which agent runs your crewmates:
-- `q` — Amazon Q CLI (default, unlimited usage)
-- `kiro` — Kiro CLI (premium models, uses subscription quota)
+- `config/harness`: adapter name; default `kiro-cli`.
+- `config/autonomy`: `supervised` or `trusted`; default `supervised`.
+- `config/tmux-session`: optional tmux session name; default `kiro-dispatcher`.
 
-### Delivery Mode (`config/delivery-mode`)
+Environment variables override location-specific behavior:
+- `DISPATCHER_HOME`: code/state home;
+- `DISPATCHER_WORKTREE_ROOT`: worktree parent;
+- `DISPATCHER_TMUX_SESSION`: tmux session name.
 
-How ship tasks deliver changes:
-- `direct-pr` — push branch and create PR (default)
-- `local-only` — commit locally, present for manual merge
-- `no-mistakes` — full review pipeline before push
+## Validation
 
-### Autonomy (`config/autonomy`)
+```bash
+tests/lint.sh
+tests/smoke.sh
+```
 
-- `conservative` — always ask before merging/deploying (default)
-- `yolo` — crewmates can push without asking
+The smoke test uses a local mock harness; it does not consume Kiro quota. It exercises brief creation, worktree isolation, tmux launch, status/report creation, JSON output, commit preservation, and teardown.
 
-## Architecture Decisions
+## Safety boundaries
 
-### Why tmux?
+- The dispatcher is instructed not to modify projects directly.
+- Crewmates work in task-specific git worktrees.
+- No merge, deploy, push, or branch deletion is performed by helper scripts.
+- Default autonomy is supervised.
+- Teardown fails closed on uncommitted work unless explicitly forced.
+- Project contents are treated as untrusted input.
 
-- Each crewmate is a real, independent terminal session.
-- You can `tmux attach` and watch or intervene anytime.
-- No shared context window — each agent gets full context budget.
-- Process isolation — one crewmate crashing doesn't affect others.
-
-### Why git worktrees?
-
-- True file-level isolation — parallel tasks can't conflict.
-- Each task works on its own branch from the start.
-- Clean teardown — remove the worktree and the mess is gone.
-- The main repo stays clean.
-
-### Why Amazon Q as default backend?
-
-- No hard usage limits — spawn as many crewmates as needed.
-- Save Kiro subscription quota for the dispatcher (complex decisions).
-- Override per-task when you need premium model quality.
-
-## Inspired By
-
-- [firstmate](https://github.com/kunchenguid/firstmate) — the original agent distro concept for Claude Code
+Inspired by the generic-crew, visible-session, worktree-isolation approach of [firstmate](https://github.com/kunchenguid/firstmate), adapted for Kiro CLI rather than copied as a fixed-role CAO workflow.
 
 ## License
 
-MIT
+MIT; see `LICENSE`.

@@ -1,0 +1,3 @@
+# supervised: interactive tool approvals in tmux
+# trusted: noninteractive and --trust-all-tools
+supervised
